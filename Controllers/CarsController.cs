@@ -1,4 +1,5 @@
-﻿using CarRental.DAL;
+﻿using AutoMapper;
+using CarRental.DAL;
 using CarRental.Entities.Dtos.Cars;
 using CarRental.Models;
 using Microsoft.AspNetCore.Http;
@@ -13,30 +14,33 @@ namespace CarRental.Controllers
     public class CarsController : ControllerBase
     {
         private readonly AppDbContext _context;
-
-        public CarsController(AppDbContext context)
+        private readonly IMapper _mapper;
+        public CarsController(AppDbContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
 
         [HttpGet("GetById/{id}")]
         public async Task<IActionResult> GetById([FromRoute]int id) 
         {
             Car? result = await _context.Cars.Where(c => c.Id == id).FirstOrDefaultAsync();
+            GetCarDto getCarDto = _mapper.Map<GetCarDto>(result);
 
             if (result == null) return NotFound();
 
-            return StatusCode((int)HttpStatusCode.OK, result);
+            return StatusCode((int)HttpStatusCode.OK, getCarDto);
         }
 
         [HttpGet("GetAll")]
         public async Task<IActionResult> GetAll()
         {
             List<Car> cars = await _context.Cars.ToListAsync();
+            List<GetCarDto> getCarDtos = _mapper.Map<List<GetCarDto>>(cars);
 
             if (cars.Count == 0) return NotFound();
 
-            return StatusCode((int)HttpStatusCode.OK, cars);
+            return StatusCode((int)HttpStatusCode.OK, getCarDtos);
         }
 
         [HttpPost]

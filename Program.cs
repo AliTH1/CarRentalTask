@@ -1,5 +1,6 @@
 using CarRental.DAL;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +14,7 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
 {
     opt.UseSqlServer(builder.Configuration.GetConnectionString("Default"));
 });
+builder.Services.AddAutoMapper(Assembly.GetExecutingAssembly());
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

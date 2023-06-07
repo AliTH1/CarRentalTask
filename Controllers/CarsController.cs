@@ -2,6 +2,7 @@
 using CarRental.DAL;
 using CarRental.Entities.Dtos.Cars;
 using CarRental.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -44,6 +45,7 @@ namespace CarRental.Controllers
         }
 
         [HttpPost]
+        [Authorize]
         public async Task<IActionResult> Add(CreateCarDto createCar)
         {
             Car car = new Car()

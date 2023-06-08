@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
 using CarRental.DAL;
+using CarRental.DAL.Repositories.Abstracts;
 using CarRental.Entities.Dtos.Cars;
 using CarRental.Models;
+using CarRental.UnitOfWork.Abstracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -14,18 +16,18 @@ namespace CarRental.Controllers
     [ApiController]
     public class CarsController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
-        public CarsController(AppDbContext context, IMapper mapper)
+        public CarsController(IMapper mapper, IUnitOfWork unitOfWork)
         {
-            _context = context;
             _mapper = mapper;
+            _unitOfWork = unitOfWork;
         }
 
         [HttpGet("GetById/{id}")]
-        public async Task<IActionResult> GetById([FromRoute]int id) 
+        public async Task<IActionResult> GetById([FromRoute] int id)
         {
-            Car? result = await _context.Cars.Where(c => c.Id == id).FirstOrDefaultAsync();
+            Car? result = await _unitOfWork.CarRepository.Get(c => c.Id == id);
             GetCarDto getCarDto = _mapper.Map<GetCarDto>(result);
 
             if (result == null) return NotFound();
@@ -36,7 +38,7 @@ namespace CarRental.Controllers
         [HttpGet("GetAll")]
         public async Task<IActionResult> GetAll()
         {
-            List<Car> cars = await _context.Cars.ToListAsync();
+            List<Car> cars = await _unitOfWork.CarRepository.GetAll();
             List<GetCarDto> getCarDtos = _mapper.Map<List<GetCarDto>>(cars);
 
             if (cars.Count == 0) return NotFound();
@@ -57,17 +59,16 @@ namespace CarRental.Controllers
                 Description = createCar.Description,
             };
 
-            await _context.Cars.AddAsync(car);
-            await _context.SaveChangesAsync();
+            await _unitOfWork.CarRepository.AddAsync(car);
+            await _unitOfWork.SaveAsync();
 
             return StatusCode((int)HttpStatusCode.Created, car);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update([FromRoute]int id, UpdateCarDto updateCar)
+        public async Task<IActionResult> Update([FromRoute] int id, UpdateCarDto updateCar)
         {
-            Car? result = await _context.Cars.Where(c => c.Id == updateCar.Id)
-                .FirstOrDefaultAsync();
+            Car? result = await _unitOfWork.CarRepository.Get(c => c.Id == updateCar.Id);
             if (result == null) return NotFound();
 
             result.BrandId = updateCar.BrandId;
@@ -76,7 +77,7 @@ namespace CarRental.Controllers
             result.DailyPrice = updateCar.DailyPrice;
             result.Description = updateCar.Description;
 
-            await _context.SaveChangesAsync();
+            await _unitOfWork.SaveAsync();
 
             return StatusCode((int)HttpStatusCode.Accepted, result);
         }
@@ -84,11 +85,11 @@ namespace CarRental.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            Car? result = await _context.Cars.Where(c => c.Id == id).FirstOrDefaultAsync();
+            Car? result = await _unitOfWork.CarRepository.Get(c => c.Id == id);
             if (result == null) return NotFound();
 
-            _context.Remove(result);
-            await _context.SaveChangesAsync();
+            await _unitOfWork.CarRepository.DeleteAsync(result);
+            await _unitOfWork.SaveAsync();
             return StatusCode((int)HttpStatusCode.OK);
         }
     }
